@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  python-app:
+    build: .
+    ports:
+      - "5050:5050"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+
+  # nextjs-app:
+  #   build: ./path/to/nextjs/app
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - API_URL=http://python-app:5000
+  #   depends_on:
+  #     - python-app
