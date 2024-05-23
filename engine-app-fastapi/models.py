@@ -28,4 +28,11 @@ class Codebase(Base):
     # fixed_end_column = Column(Integer, index=True)
     # codebase_id = Column(Integer, ForeignKey("codebases.id"))
 
+class SourceCode(Base):
+    __tablename__ = "sourcecodes"
 
+    # id = Column(Integer, primary_key=True, index=True)
+    # code = Column(String, index=True)
+    # codebase_id = Column(Integer, ForeignKey("codebases.id"))
+
+    # codebase = relationship("Codebase", back_populates="sourcecodes")

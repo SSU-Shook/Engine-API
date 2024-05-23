@@ -1,11 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, Form, UploadFile
 import models, crud, schemas
 from database import SessionLocal, engine
 from sqlalchemy.orm import Session
 from fastapi import Depends, HTTPException, status
 from typing import List
-
-
 
 
 # http://127.0.0.1:8000/docs
@@ -32,3 +30,28 @@ async def analyze():
 @app.post("/fix")
 async def fix():
     return {"message": "Fix"}
+
+@app.post("/upload/")
+async def upload_file(
+    file: UploadFile = File(...),
+    description: str = Form(...)
+):
+    return {
+        "file_name": file.filename,
+        "description": description,
+        "content_type": file.content_type
+    }
+
+@app.post("/upload-multiple/")
+async def upload_multiple_files(
+    files: List[UploadFile] = File(...),
+    descriptions: List[str] = Form(...)
+):
+    return [
+        {
+            "file_name": file.filename,
+            "description": description,
+            "content_type": file.content_type
+        }
+        for file, description in zip(files, descriptions)
+    ]
