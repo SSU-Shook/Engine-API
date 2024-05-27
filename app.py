@@ -72,11 +72,10 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
     try:
         with zipfile.ZipFile(file_location, 'r') as zip_ref:
             zip_ref.extractall(f"files/{dirname}")
+            # remove zip file ?
+            # os.remove(file_location)
     except Exception as e:
         raise HTTPException(status_code=400, detail="Failed to extract zip file")
-
-        # remove zip file ?
-        # os.remove(file_location)
 
     # save file metadata
     file_metadata = ZipFileMetadata(
@@ -99,8 +98,6 @@ def read_files(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return files
 
 
-
-
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5000)
+    uvicorn.run(app, host="0.0.0.0", port=5001)
