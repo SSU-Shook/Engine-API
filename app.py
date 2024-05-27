@@ -79,7 +79,7 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
     file_metadata = ZipFileMetadata(
         name=file.filename,
         path=f"files/{dirname}",
-        content_type=file.content_type,
+        content_type=file.content_type if file.content_type else "application/zip",
         size=os.path.getsize(file_location)
     )
 
