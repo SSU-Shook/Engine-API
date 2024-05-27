@@ -8,6 +8,13 @@ from models import Base, ZipFileMetadata
 import schemas
 import hashlib
 import time
+from typing import List
+
+# http://127.0.0.1:8000/docs
+# http://127.0.0.1:8000/redoc
+
+# - request codeql to scan this file
+# - request llm to fix this file (vulnerability code)
 
 Base.metadata.create_all(bind=engine)
 
@@ -27,28 +34,39 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
     if file.filename.split(".")[-1] not in ["zip"]:
         raise HTTPException(status_code=400, detail="Only zip files are allowed")
 
-    name = file.filename.split(".")[0] + "-" + str(int(time.time())) + "-" + hashlib.md5(str(int(time.time())).encode()).hexdigest() + "." + file.filename.split(".")[-1]
+    # create unique name
+    name = file.filename.split(".")[0] + "-" \
+        + str(int(time.time())) + "-" + \
+            hashlib.md5(str(int(time.time())).encode()).hexdigest() + "." + \
+                file.filename.split(".")[-1]
 
+    # save file
+    if not os.path.exists("files"):
+        os.makedirs("files")
 
     file_location = f"files/{name}"
     with open(file_location, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
-    
-    # 파일 메타데이터 저장
+    # save file metadata
     file_metadata = ZipFileMetadata(
         file_name=name,
         origin_name=file.filename,
         content_type=file.content_type,
         size=os.path.getsize(file_location)
     )
+
+    # save to db
     db.add(file_metadata)
     db.commit()
     db.refresh(file_metadata)
 
-
     return file_metadata
-    # return "File uploaded successfully"
+
+@app.get("/files/", response_model=List[schemas.ZipFileMetadata])
+def read_files(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    files = db.query(ZipFileMetadata).offset(skip).limit(limit).all()
+    return files
 
 if __name__ == "__main__":
     import uvicorn
@@ -67,12 +85,8 @@ if __name__ == "__main__":
 # # from models import Codebase, zipCodes
 
 
-# # http://127.0.0.1:8000/docs
-# # http://127.0.0.1:8000/redoc
-
 # ########### Todo ############
-# # - request codeql to scan this file
-# # - request llm to fix this file (vulnerability code)
+
 # # - redis cache
 
 # Base.metadata.create_all(bind=engine)
@@ -102,21 +116,6 @@ if __name__ == "__main__":
 # # @app.post("/fix")
 # # async def fix():
 # #     return {"message": "Fix"}
-
-# @app.post("/uploadfile/", response_model=ZipFile)
-# async def create_upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
-#     filename = file.filename
-#     file_location = os.path.join(UPLOAD_FOLDER, filename)
-    
-#     with open(file_location, "wb") as buffer:
-#         shutil.copyfileobj(file.file, buffer)
-    
-#     zip_file = ZipFileCreate(filename=filename, path=file_location)
-#     db_file = ZipFile(**zip_file.dict())
-#     db.add(db_file)
-#     db.commit()
-#     db.refresh(db_file)
-#     return db_file
 
 # # @app.get("/files/", response_model=list[ZipFile])
 # # def read_files(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
