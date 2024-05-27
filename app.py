@@ -63,7 +63,7 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
         shutil.copyfileobj(file.file, buffer)
 
     # check file size (100MB)
-    if os.path.getsize(file.filename) > 1024 * 1024:
+    if os.path.getsize(file_location) > 1024 * 1024:
         # remove file
         os.remove(file_location)
         raise HTTPException(status_code=400, detail="File size should be less than 1MB")
