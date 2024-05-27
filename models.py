@@ -31,15 +31,3 @@ class ZipFileMetadata(Base):
 #     start_column = Column(Integer, index=True)
 #     end_line = Column(Integer, index=True)
 #     end_column = Column(Integer, index=True)
-
-# class ZipFileCreate(Base):
-#     __tablename__ = "zip_codes"
-
-#     id = Column(Integer, primary_key=True, index=True)
-#     filename = Column(String, unique=True, index=True)
-#     path = Column(String, unique=True)
-#     # id = db.Column(db.Integer, primary_key=True)
-#     # filename = db.Column(db.String(255), nullable=False)
-#     # data = db.Column(db.LargeBinary, nullable=False)
-#     # codebase_id = db.Column(db.Integer, db.ForeignKey("codebases.id"))
-

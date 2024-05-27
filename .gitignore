@@ -17,5 +17,6 @@ pip-selfcheck.json
 .db
 venv
 .DS_Store
+__pycache__
 
 # End of https://www.toptal.com/developers/gitignore/api/venv
