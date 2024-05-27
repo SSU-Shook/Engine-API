@@ -45,10 +45,6 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
     if file.filename.split(".")[-1] not in ["zip"]:
         raise HTTPException(status_code=400, detail="Only zip files are allowed")
 
-    # check file size (100MB)
-    if os.path.getsize(file.filename) > 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File size should be less than 1MB")
-
     # save file
     if not os.path.exists("files"):
         os.makedirs("files")
@@ -65,6 +61,12 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
     file_location = f"files/{dirname}/{file.filename}"
     with open(file_location, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
+
+    # check file size (100MB)
+    if os.path.getsize(file.filename) > 1024 * 1024:
+        # remove file
+        os.remove(file_location)
+        raise HTTPException(status_code=400, detail="File size should be less than 1MB")
 
     # extract file
     with zipfile.ZipFile(file_location, 'r') as zip_ref:
