@@ -20,3 +20,4 @@ def filelist_test():
 
 if __name__ == "__main__":
     filelist_test()
+    upload_test()

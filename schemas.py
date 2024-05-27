@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 
 class ZipFileMetadataBase(BaseModel):
-    file_name: str
-    origin_name: str
+    name: str
+    path: str
     content_type: str
     size: int
 

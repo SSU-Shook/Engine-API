@@ -5,8 +5,8 @@ class ZipFileMetadata(Base):
     __tablename__ = "zipfile_metadata"
 
     id = Column(Integer, primary_key=True, index=True)
-    file_name = Column(String, index=True)
-    origin_name = Column(String)
+    name = Column(String, index=True)
+    path = Column(String)
     content_type = Column(String)
     size = Column(Integer)
 

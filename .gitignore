@@ -14,7 +14,7 @@
 pyvenv.cfg
 .venv
 pip-selfcheck.json
-.db
+database.db
 venv
 .DS_Store
 __pycache__
