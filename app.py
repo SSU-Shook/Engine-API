@@ -69,8 +69,11 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
         raise HTTPException(status_code=400, detail="File size should be less than 1MB")
 
     # extract file
-    with zipfile.ZipFile(file_location, 'r') as zip_ref:
-        zip_ref.extractall(f"files/{dirname}")
+    try:
+        with zipfile.ZipFile(file_location, 'r') as zip_ref:
+            zip_ref.extractall(f"files/{dirname}")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Failed to extract zip file")
 
         # remove zip file ?
         # os.remove(file_location)
