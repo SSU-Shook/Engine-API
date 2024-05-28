@@ -9,7 +9,8 @@ def upload_test():
         url = 'http://158.247.236.199:5001/upload/'
         url = "http://203.253.21.171:5001/upload/"
 
-    file_path = '../test.zip'
+    file_path = 'test.zip'
+    file_path = 'npm-lockfile-38f99c3374ca4e9bd75f3ec34f3edb249eb391cf.zip'
 
     with open(file_path, 'rb') as f:
         files = {'file': f}
@@ -22,6 +23,7 @@ def upload_test():
         print(response.status_code)
         if response.status_code == 200:
             print(response.json())
+            return response.json()['id']
         else:
             print(response.text)
 
@@ -36,12 +38,12 @@ def filelist_test():
     print(response.status_code)
     print(response.json())
 
-def analysis_test():
+def analysis_test(file_id):
     if isLocal:
         url = "http://localhost:5001/analyze/?file_id=1"
     else:
         url = "http://158.247.236.199:5001/analyze/?file_id=1"
-        url = "http://203.253.21.171:5001/analyze/?file_id=1"
+        url = f"http://203.253.21.171:5001/analyze/?file_id={file_id}"
     
     headers = {
         "Content-Type": "application/json"
@@ -52,6 +54,6 @@ def analysis_test():
     print(response.json())
 
 if __name__ == "__main__":
-    upload_test()
+    file_id = upload_test()
     filelist_test()
-    analysis_test()
+    analysis_test(file_id)
