@@ -98,6 +98,26 @@ def read_files(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return files
 
 
+# codeql analysis
+@app.post("/analyze/", response_model=List[schemas.Codebase])
+async def analyze_file(request: schemas.AnalyzeRequest, db: Session = Depends(get_db)):
+    # get file
+    file = db.query(ZipFileMetadata).filter(ZipFileMetadata.id == request.file_id).first()
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    # check file
+    if not os.path.exists(file.path):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    os.makedirs("db", exist_ok=True)
+
+    # command = f"codeql database create --language=javascript db/{file.name} {file.path}"
+
+    # return example_codebase = schemas.Codebase(name="test", description="test", severity="test", message="test", path="test", start_line=1, start_column=1, end_line=1, end_column=1, zipfilemetadata_id=1)
+
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5001)
