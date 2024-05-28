@@ -6,6 +6,7 @@ COPY app.py /app
 COPY database.py /app
 COPY models.py /app
 COPY schemas.py /app
+COPY config.py /app
 COPY requirements.txt /app
 
 RUN pip install --no-cache-dir -r /app/requirements.txt
@@ -19,9 +20,10 @@ RUN unzip codeql-cli.zip -d codeql-cli
 RUN git clone https://github.com/github/codeql codeql-repo
 
 # RUN export PATH=$PATH:/codeql/codeql-cli/codeql
+# RUN /bin/bash echo "export PATH=$PATH:/codeql/codeql-cli/codeql" >> ~/.bashrc
+# RUN source ~/.bashrc
 
-RUN echo "export PATH=$PATH:/codeql/codeql-cli/codeql" >> ~/.bashrc
-RUN source ~/.bashrc
+ENV PATH /codeql/codeql-cli/codeql:$PATH
 
 WORKDIR /app
 

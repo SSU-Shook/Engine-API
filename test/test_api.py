@@ -1,13 +1,15 @@
 import requests
 
-isLocal = True
+isLocal = False
 
 def upload_test():
     if isLocal:
         url = 'http://localhost:5001/upload/'
     else:
         url = 'http://158.247.236.199:5001/upload/'
-    file_path = 'test.zip'
+        url = "http://203.253.21.171:5001/upload/"
+
+    file_path = '../test.zip'
 
     with open(file_path, 'rb') as f:
         files = {'file': f}
@@ -28,6 +30,7 @@ def filelist_test():
         url = "http://localhost:5001/files/"
     else:
         url = "http://158.247.236.199:5001/files/"
+        url = "http://203.253.21.171:5001/files/"
 
     response = requests.get(url)
     print(response.status_code)
@@ -38,6 +41,7 @@ def analysis_test():
         url = "http://localhost:5001/analyze/?file_id=1"
     else:
         url = "http://158.247.236.199:5001/analyze/?file_id=1"
+        url = "http://203.253.21.171:5001/analyze/?file_id=1"
     
     headers = {
         "Content-Type": "application/json"
