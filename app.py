@@ -14,11 +14,11 @@ import random
 import zipfile
 import config
 import subprocess
+import csv
 
 # http://127.0.0.1:8000/docs
 # http://127.0.0.1:8000/redoc
 
-# - request codeql to scan this file
 # - request llm to fix this file (vulnerability code)
 
 Base.metadata.create_all(bind=engine)
@@ -134,20 +134,29 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
     command2 = config.CODEQL_ANALYSIS_COMMAND.format(db_path = f"db/{file.path}",
                                                      ql_path = config.CODEQL_QL_PATH,
                                                      output_path = f"results/{file.path}.csv",)
-    
+    # print(command2)
     try:
         p = execute_command(command2)
         p.wait()
     except:
         raise HTTPException(status_code=500, detail="Failed to run codeql analysis")
-
-    # print(command2)
     
-    return []
+    # update db
+    file.analyzed = True
 
-    # return example_codebase = schemas.Codebase(name="test", description="test", severity="test", message="test", path="test", start_line=1, start_column=1, end_line=1, end_column=1, zipfilemetadata_id=1)
+    # parse result
+    codebases = []
+    try:
+        with open(f"results/{file.path}.csv", 'r', encoding='utf-8') as f:
+            rdr = csv.reader(f)
+            for line in rdr:
+                # update db
+                codebase = schemas.Codebase(name=line[0], description=line[1], severity=line[2], message=line[3], path=line[4], start_line=int(line[5]), start_column=int(line[6]), end_line=int(line[7]), end_column=int(line[8]), zipfilemetadata_id=file_id)
+                codebases.append(codebase)
+    except:
+        raise HTTPException(status_code=500, detail="Failed to parse codeql analysis result")
 
-
+    return codebases
 
 if __name__ == "__main__":
     import uvicorn
