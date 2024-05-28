@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.types import Boolean
 from database import Base
 
@@ -11,6 +12,9 @@ class ZipFileMetadata(Base):
     content_type = Column(String)
     size = Column(Integer)
     is_scanned = Column(Boolean, default=False)
+
+    # Relationship to Codebase
+    codebases = relationship("Codebase", back_populates="zipfilemetadata")
 
 class Codebase(Base):
     __tablename__ = "codebases"
@@ -26,4 +30,6 @@ class Codebase(Base):
     end_line = Column(Integer, index=True)
     end_column = Column(Integer, index=True)
     zipfilemetadata_id = Column(Integer, ForeignKey("zipfile_metadata.id"))
-    
+
+    # Relationship to ZipFileMetadata
+    zipfilemetadata = relationship("ZipFileMetadata", back_populates="codebases")

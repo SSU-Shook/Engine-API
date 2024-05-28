@@ -35,18 +35,18 @@ def filelist_test():
 
 def analysis_test():
     if isLocal:
-        url = "http://localhost:5001/analyze/"
+        url = "http://localhost:5001/analyze/?file_id=1"
     else:
-        url = "http://158.247.236.199:5001/analyze/"
+        url = "http://158.247.236.199:5001/analyze/?file_id=1"
     
     headers = {
         "Content-Type": "application/json"
     }
 
-    response = requests.post(url, json={"file_id": 1}, headers=headers)
+    response = requests.get(url)
     print(response.status_code)
     print(response.json())
-    
+
 if __name__ == "__main__":
     upload_test()
     filelist_test()

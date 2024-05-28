@@ -1,5 +1,5 @@
 # main.py
-from fastapi import FastAPI, File, UploadFile, Depends, HTTPException
+from fastapi import FastAPI, File, UploadFile, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import shutil
@@ -12,6 +12,8 @@ import time
 from typing import List
 import random
 import zipfile
+import config
+import subprocess
 
 # http://127.0.0.1:8000/docs
 # http://127.0.0.1:8000/redoc
@@ -38,6 +40,10 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def execute_command(command):
+    process = subprocess.Popen(command, shell=True)
+    return process
 
 @app.post("/upload/", response_model=schemas.ZipFileMetadata)
 async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -80,7 +86,7 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
     # save file metadata
     file_metadata = ZipFileMetadata(
         name=file.filename,
-        path=f"files/{dirname}",
+        path=dirname,
         content_type=file.content_type if file.content_type else "application/zip",
         size=os.path.getsize(file_location)
     )
@@ -99,20 +105,45 @@ def read_files(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 
 
 # codeql analysis
-@app.post("/analyze/", response_model=List[schemas.Codebase])
-async def analyze_file(request: schemas.AnalyzeRequest, db: Session = Depends(get_db)):
+@app.get("/analyze/", response_model=List[schemas.Codebase])
+async def analyze_file(file_id: int = Query(..., description="ID of the file to analyze"), db: Session = Depends(get_db)):
     # get file
-    file = db.query(ZipFileMetadata).filter(ZipFileMetadata.id == request.file_id).first()
+    file = db.query(ZipFileMetadata).filter(ZipFileMetadata.id == file_id).first()
+    # print(file)
     if not file:
         raise HTTPException(status_code=404, detail="File not found")
 
     # check file
-    if not os.path.exists(file.path):
-        raise HTTPException(status_code=404, detail="File not found")
+    if not os.path.exists(f'files/{file.path}') or not os.path.isdir(f'files/{file.path}'):
+        raise HTTPException(status_code=404, detail="File path not found")
 
     os.makedirs("db", exist_ok=True)
+    os.makedirs("results", exist_ok=True)
 
-    # command = f"codeql database create --language=javascript db/{file.name} {file.path}"
+    command1 = config.CODEQL_CREATE_COMMAND.format(db_path = f"db/{file.path}",
+                                                  src_path = f'files/{file.path}')
+    # print(command1)
+
+    try:
+        p = execute_command(command1)
+        p.wait()
+    except:
+        raise HTTPException(status_code=500, detail="Failed to create codeql database")
+
+    # run codeql analysis
+    command2 = config.CODEQL_ANALYSIS_COMMAND.format(db_path = f"db/{file.path}",
+                                                     ql_path = config.CODEQL_QL_PATH,
+                                                     output_path = f"results/{file.path}.csv",)
+    
+    try:
+        p = execute_command(command2)
+        p.wait()
+    except:
+        raise HTTPException(status_code=500, detail="Failed to run codeql analysis")
+
+    # print(command2)
+    
+    return []
 
     # return example_codebase = schemas.Codebase(name="test", description="test", severity="test", message="test", path="test", start_line=1, start_column=1, end_line=1, end_column=1, zipfilemetadata_id=1)
 
