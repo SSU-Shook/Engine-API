@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 import shutil
 import os
 from database import SessionLocal, engine
-from models import Base, ZipFileMetadata
+from models import Base, ZipFileMetadata, Codebase
 import schemas
 import hashlib
 import time
@@ -150,10 +150,10 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
         with open(f"results/{file.path}.csv", 'r', encoding='utf-8') as f:
             rdr = csv.reader(f)
             if not rdr:
-                return codebases
+                return []
             for line in rdr:
                 # update db
-                codebase = schemas.Codebase(name=line[0], description=line[1], severity=line[2], message=line[3], path=line[4], start_line=int(line[5]), start_column=int(line[6]), end_line=int(line[7]), end_column=int(line[8]), zipfilemetadata_id=file_id)
+                codebase = Codebase(name=line[0], description=line[1], severity=line[2], message=line[3], path=line[4], start_line=int(line[5]), start_column=int(line[6]), end_line=int(line[7]), end_column=int(line[8]), zipfilemetadata_id=file_id)
                 codebases.append(codebase)
     except:
         raise HTTPException(status_code=500, detail="Failed to parse codeql analysis result")
