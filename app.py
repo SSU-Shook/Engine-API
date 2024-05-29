@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 import shutil
 import os
 from database import SessionLocal, engine
-from models import Base, ZipFileMetadata, Codebase, CodebaseCreate
+from models import Base, ZipFileMetadata, Codebase
 import schemas
 import hashlib
 import time
@@ -161,7 +161,7 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
                 return codebases
             for line in rdr:
                 # update db
-                codebase = CodebaseCreate(name=line[0], 
+                codebase = Codebase(name=line[0], 
                                     description=line[1], 
                                     severity=line[2], 
                                     message=line[3], 
@@ -175,7 +175,7 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
                 db.add(codebase)
                 db.commit()
                 db.refresh(codebase)
-                
+
                 codebases.append(codebase)
     except:
         raise HTTPException(status_code=500, detail="Failed to parse codeql analysis result")
