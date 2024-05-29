@@ -150,7 +150,7 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
         raise HTTPException(status_code=500, detail="Failed to run codeql analysis")
     
     # update db
-    file.analyzed = True
+    file.is_scanned = True
 
     # parse result
     codebases = []
