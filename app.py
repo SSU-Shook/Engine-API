@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 import shutil
 import os
 from database import SessionLocal, engine
-from models import Base, ZipFileMetadata, Codebase
+from models import Base, ZipFileMetadata, Codebase, CodebaseCreate
 import schemas
 import hashlib
 import time
@@ -44,6 +44,14 @@ def get_db():
 def execute_command(command):
     process = subprocess.Popen(command, shell=True)
     return process
+
+def add_codebase(db: Session, codebase_dict: dict) -> schemas.Codebase:
+    db_codebase = Codebase(**codebase_dict)
+    db.add(db_codebase)
+    db.commit()
+    db.refresh(db_codebase)
+    return db_codebase
+
 
 @app.post("/upload/", response_model=schemas.ZipFileMetadata)
 async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -150,10 +158,24 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
         with open(f"results/{file.path}.csv", 'r', encoding='utf-8') as f:
             rdr = csv.reader(f)
             if not rdr:
-                return []
+                return codebases
             for line in rdr:
                 # update db
-                codebase = Codebase(name=line[0], description=line[1], severity=line[2], message=line[3], path=line[4], start_line=int(line[5]), start_column=int(line[6]), end_line=int(line[7]), end_column=int(line[8]), zipfilemetadata_id=file_id)
+                codebase = CodebaseCreate(name=line[0], 
+                                    description=line[1], 
+                                    severity=line[2], 
+                                    message=line[3], 
+                                    path=line[4], 
+                                    start_line=int(line[5]), 
+                                    start_column=int(line[6]), 
+                                    end_line=int(line[7]), 
+                                    end_column=int(line[8]),
+                                    zipfilemetadata_id=file_id)
+                
+                db.add(codebase)
+                db.commit()
+                db.refresh(codebase)
+                
                 codebases.append(codebase)
     except:
         raise HTTPException(status_code=500, detail="Failed to parse codeql analysis result")
