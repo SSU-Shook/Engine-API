@@ -198,18 +198,49 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
     if not codebases:
         raise HTTPException(status_code=404, detail="Codebases not found")
 
-    # patch
+    '''
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    description = Column(String, index=True)
+    severity = Column(String, index=True)
+    message = Column(String, index=True)
+    path = Column(String, index=True)
+    start_line = Column(Integer, index=True)
+    start_column = Column(Integer, index=True)
+    end_line = Column(Integer, index=True)
+    end_column = Column(Integer, index=True)
+    zipfilemetadata_id = Column(Integer, ForeignKey("zipfile_metadata.id"))
+
+    "Indirect uncontrolled command line",
+    "Forwarding command-line arguments to a child process executed within a shell may indirectly introduce command-line injection vulnerabilities.",
+    "warning",
+    "This command depends on an unsanitized [[""command-line argument""|""relative:///npm-lockfile-38f99c3374ca4e9bd75f3ec34f3edb249eb391cf/bin.js:17:2:21:2""]].",
+    "/npm-lockfile-38f99c3374ca4e9bd75f3ec34f3edb249eb391cf/getLockfile.js",
+    "43",
+    "4",
+    "43",
+    "134
+    '''
+
+    # codebase 전체 학습
+    # 여기에 llm repair .py 코드 추가
+
+
+    # 스타일 일관성 맞추어서 patch
     for codebase in codebases:
-        # patch
         with open(f'files/{file.path}/{codebase.path}', 'r', encoding='utf-8') as f:
             lines = f.readlines()
+            print(lines[codebase.start_line])
             lines[codebase.start_line] = f"{codebase.message}\n"
+            print('--' * 20)
+            print(codebase.message)
         
-        with open(f'files/{file.path}/{codebase.path}', 'w', encoding='utf-8') as f:
-            f.writelines(lines)
+        # with open(f'files/{file.path}/{codebase.path}', 'w', encoding='utf-8') as f:
+        #     f.writelines(lines)
 
+    # return을 markdown 형식으로 변경
     return {"message": "Patched successfully"}
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5001)
+    uvicorn.run(app, host="0.0.0.0", port=5000)
