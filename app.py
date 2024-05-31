@@ -77,10 +77,10 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
         shutil.copyfileobj(file.file, buffer)
 
     # check file size (100MB)
-    if os.path.getsize(file_location) > 1024 * 1024:
+    if os.path.getsize(file_location) > 1024 * 1024 * 100:
         # remove file
         os.remove(file_location)
-        raise HTTPException(status_code=400, detail="File size should be less than 1MB")
+        raise HTTPException(status_code=400, detail="File size should be less than 100MB")
 
     # extract file
     try:
@@ -181,6 +181,34 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
         raise HTTPException(status_code=500, detail="Failed to parse codeql analysis result")
 
     return codebases
+
+@app.get("/patch/")
+async def patch_file(file_id: int = Query(..., description="ID of the file to patch"), db: Session = Depends(get_db)):
+    # get file
+    file = db.query(ZipFileMetadata).filter(ZipFileMetadata.id == file_id).first()
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    # check file
+    if not os.path.exists(f'files/{file.path}') or not os.path.isdir(f'files/{file.path}'):
+        raise HTTPException(status_code=404, detail="File path not found")
+
+    # check codebase
+    codebases = db.query(Codebase).filter(Codebase.zipfilemetadata_id == file_id).all()
+    if not codebases:
+        raise HTTPException(status_code=404, detail="Codebases not found")
+
+    # patch
+    for codebase in codebases:
+        # patch
+        with open(f'files/{file.path}/{codebase.path}', 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            lines[codebase.start_line] = f"{codebase.message}\n"
+        
+        with open(f'files/{file.path}/{codebase.path}', 'w', encoding='utf-8') as f:
+            f.writelines(lines)
+
+    return {"message": "Patched successfully"}
 
 if __name__ == "__main__":
     import uvicorn
