@@ -223,17 +223,47 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
     '''
 
     # codebase 전체 학습
-    # 여기에 llm repair .py 코드 추가
 
+    # 여기에 llm repair .py 코드 호출 추가
+
+    # 스타일 프로파일링 등을 통해 학습된 모델로 패치 코드 생성
 
     # 스타일 일관성 맞추어서 patch
+
+    vuln_details = ""
     for codebase in codebases:
-        with open(f'files/{file.path}/{codebase.path}', 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-            print(lines[codebase.start_line])
-            lines[codebase.start_line] = f"{codebase.message}\n"
-            print('--' * 20)
-            print(codebase.message)
+        vuln_datail = config.VULN_DETAIL.format(vuln_name=codebase.name,
+                                                    path=codebase.path,
+                                                    severity=codebase.severity,
+                                                    description=codebase.description,
+                                                    message=codebase.message,
+                                                    original_code="import time",
+                                                    patched_code="import os",
+                                                    diff_code="+ import os\n- import time",
+                                                    patch_description="time -> os"
+        )
+        vuln_details += vuln_datail
+    
+    # 리포트 markdown 템플릿 생성
+    template = config.TEMPLATE.format(title=file.name,
+                           date=time.strftime("%Y-%m-%d %H:%M:%S"),
+                           model="GPT-4o",
+                           vuln_count=len(codebases),
+                            error_count=len([c for c in codebases if c.severity == "error"]),
+                            warning_count=len([c for c in codebases if c.severity == "warning"]),
+                            note_count=len([c for c in codebases if c.severity == "note"]),
+                            details=vuln_details)
+    
+    with open(f"reports/{file.path}.md", 'w', encoding='utf-8') as f:
+        f.write(template)
+
+    # for codebase in codebases:
+    #     with open(f'files/{file.path}/{codebase.path}', 'r', encoding='utf-8') as f:
+    #         lines = f.readlines()
+    #         print(lines[codebase.start_line])
+    #         lines[codebase.start_line] = f"{codebase.message}\n"
+    #         print('--' * 20)
+    #         print(codebase.message)
         
         # with open(f'files/{file.path}/{codebase.path}', 'w', encoding='utf-8') as f:
         #     f.writelines(lines)

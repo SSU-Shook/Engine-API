@@ -9,7 +9,7 @@ CODEQL_ANALYSIS_COMMAND = 'codeql database analyze {db_path} {ql_path} --format=
 TEMPLATE = '''
 # {title}
 
-## {abstract}
+## 프로젝트 개요
 
 - 프로젝트명: {project_name}
 - 분석 날짜: {date}
