@@ -43,7 +43,7 @@ def get_db():
         db.close()
 
 def execute_command(command):
-    process = subprocess.Popen(command, shell=True)
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return process
 
 def add_codebase(db: Session, codebase_dict: dict) -> schemas.Codebase:
@@ -61,8 +61,9 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
         raise HTTPException(status_code=400, detail="Only zip files are allowed")
 
     # save file
-    if not os.path.exists("files"):
-        os.makedirs("files")
+    # if not os.path.exists("files"):
+    #     os.makedirs("files")
+    os.makedirs("files", exist_ok=True)
 
     # create directory
     dirname = hashlib.md5(random.randbytes(32)).hexdigest() + \
@@ -126,6 +127,11 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
     if not os.path.exists(f'files/{file.path}') or not os.path.isdir(f'files/{file.path}'):
         raise HTTPException(status_code=404, detail="File path not found")
 
+    # if file is already scanned
+    if file.is_scanned:
+        codebases = db.query(Codebase).filter(Codebase.zipfilemetadata_id == file_id).all()
+        return codebases
+
     os.makedirs("db", exist_ok=True)
     os.makedirs("results", exist_ok=True)
 
@@ -135,7 +141,8 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
 
     try:
         p = execute_command(command1)
-        p.wait()
+        stdout1, stderr1 = p.wait()
+        # p.wait()
     except:
         raise HTTPException(status_code=500, detail="Failed to create codeql database")
 
@@ -146,7 +153,8 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
     # print(command2)
     try:
         p = execute_command(command2)
-        p.wait()
+        stdout2, stderr2 = p.communicate()
+        # p.wait()
     except:
         raise HTTPException(status_code=500, detail="Failed to run codeql analysis")
     
@@ -199,6 +207,11 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
     if not codebases:
         raise HTTPException(status_code=404, detail="Codebases not found")
 
+    # check if patched
+    if all([c.is_patched for c in codebases]):
+        return FileResponse(f"reports/{file.path}.md", media_type='application/octet-stream', filename=f"{file.path}.md", headers={"Content-Disposition": "attachment; filename=report.md"}, status_code=200)
+        # raise HTTPException(status_code=400, detail="All codebases are already patched")
+
     # codebase 전체 학습
 
     # 여기에 llm repair .py 코드 호출 추가
@@ -206,6 +219,12 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
     # 스타일 프로파일링 등을 통해 학습된 모델로 패치 코드 생성
 
     # 스타일 일관성 맞추어서 patch
+
+
+    # ispatched = True로 변경
+    for codebase in codebases:
+        codebase.is_patched = True
+        db.commit()
 
     vuln_details = ""
     count = 1
@@ -234,6 +253,8 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
                             note_count=len([c for c in codebases if c.severity == "note"]),
                             details=vuln_details)
     
+    os.makedirs("reports", exist_ok=True)
+
     with open(f"reports/{file.path}.md", 'w', encoding='utf-8') as f:
         f.write(template)
 
@@ -255,4 +276,4 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5000)
+    uvicorn.run(app, host="0.0.0.0", port=5001)
