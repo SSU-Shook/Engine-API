@@ -11,14 +11,15 @@ TEMPLATE = '''
 
 ## 프로젝트 개요
 
-- 프로젝트명: {project_name}
 - 분석 날짜: {date}
 - 언어: JavasSript
 - 프레임워크: NPM Library
 - 코드 패치 LLM 모델: {model}
 
 ## 취약점 분석 결과
+
 ### 취약점 분석 통계   
+
 - 전체 발견 취약점: {vuln_count}
 - 심각도별 취약점   
 error: {error_count}
