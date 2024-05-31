@@ -231,8 +231,10 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
     # 스타일 일관성 맞추어서 patch
 
     vuln_details = ""
+    count = 1
     for codebase in codebases:
-        vuln_datail = config.VULN_DETAIL.format(vuln_name=codebase.name,
+        vuln_datail = config.VULN_DETAIL.format(idx=count,
+                                                    vuln_name=codebase.name,
                                                     path=codebase.path,
                                                     severity=codebase.severity,
                                                     description=codebase.description,
@@ -243,6 +245,7 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
                                                     patch_description="time -> os"
         )
         vuln_details += vuln_datail
+        count += 1
     
     # 리포트 markdown 템플릿 생성
     template = config.TEMPLATE.format(title=file.name,

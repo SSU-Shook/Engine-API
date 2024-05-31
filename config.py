@@ -18,26 +18,26 @@ TEMPLATE = '''
 
 ## 취약점 분석 결과
 
-### 취약점 분석 통계   
+### 0. 취약점 분석 통계   
 
 - 전체 발견 취약점: {vuln_count}
 - 심각도별 취약점   
-error: {error_count}
-warning: {warning_count}
-note : {note_count}
+    - error: {error_count}
+    - warning: {warning_count}
+    - note : {note_count}
 
 {details}
-'''
+'''.strip()
 
 VULN_DETAIL = '''
-### 1. {vuln_name}
+### {idx}. {vuln_name}
 - 코드 경로: `{path}`
    
 - 심각도: {severity}
    
 - 설명: {description}
    
-- 메시지: {message}
+- 메시지: `{message}`
      
 - 원본 코드   
 ```js
@@ -55,5 +55,5 @@ VULN_DETAIL = '''
 ```
    
 - 코드 패치 설명  
-{patch_description}
-'''
+    - {patch_description}
+'''.strip()
