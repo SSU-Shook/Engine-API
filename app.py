@@ -2,6 +2,7 @@
 from fastapi import FastAPI, File, UploadFile, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from fastapi.responses import FileResponse
 import shutil
 import os
 from database import SessionLocal, engine
@@ -198,18 +199,60 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
     if not codebases:
         raise HTTPException(status_code=404, detail="Codebases not found")
 
-    # patch
-    for codebase in codebases:
-        # patch
-        with open(f'files/{file.path}/{codebase.path}', 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-            lines[codebase.start_line] = f"{codebase.message}\n"
-        
-        with open(f'files/{file.path}/{codebase.path}', 'w', encoding='utf-8') as f:
-            f.writelines(lines)
+    # codebase 전체 학습
 
-    return {"message": "Patched successfully"}
+    # 여기에 llm repair .py 코드 호출 추가
+
+    # 스타일 프로파일링 등을 통해 학습된 모델로 패치 코드 생성
+
+    # 스타일 일관성 맞추어서 patch
+
+    vuln_details = ""
+    count = 1
+    for codebase in codebases:
+        vuln_datail = config.VULN_DETAIL.format(idx=count,
+                                                    vuln_name=codebase.name,
+                                                    path=codebase.path,
+                                                    severity=codebase.severity,
+                                                    description=codebase.description,
+                                                    message=codebase.message,
+                                                    original_code="import time",
+                                                    patched_code="import os",
+                                                    diff_code="+ import os\n- import time",
+                                                    patch_description="time -> os"
+        )
+        vuln_details += vuln_datail
+        count += 1
+    
+    # 리포트 markdown 템플릿 생성
+    template = config.TEMPLATE.format(title=file.name,
+                           date=time.strftime("%Y-%m-%d %H:%M:%S"),
+                           model="GPT-4o",
+                           vuln_count=len(codebases),
+                            error_count=len([c for c in codebases if c.severity == "error"]),
+                            warning_count=len([c for c in codebases if c.severity == "warning"]),
+                            note_count=len([c for c in codebases if c.severity == "note"]),
+                            details=vuln_details)
+    
+    with open(f"reports/{file.path}.md", 'w', encoding='utf-8') as f:
+        f.write(template)
+
+    # for codebase in codebases:
+    #     with open(f'files/{file.path}/{codebase.path}', 'r', encoding='utf-8') as f:
+    #         lines = f.readlines()
+    #         print(lines[codebase.start_line])
+    #         lines[codebase.start_line] = f"{codebase.message}\n"
+    #         print('--' * 20)
+    #         print(codebase.message)
+        
+        # with open(f'files/{file.path}/{codebase.path}', 'w', encoding='utf-8') as f:
+        #     f.writelines(lines)
+
+    # return을 파일로 변경
+    
+    return FileResponse(f"reports/{file.path}.md", media_type='application/octet-stream', filename=f"{file.path}.md", headers={"Content-Disposition": "attachment; filename=report.md"}, status_code=200)
+    # return {"message": "Patched successfully"}
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5001)
+    uvicorn.run(app, host="0.0.0.0", port=5000)
