@@ -12,7 +12,7 @@ TEMPLATE = '''
 ## 프로젝트 개요
 
 - 분석 날짜: {date}
-- 언어: JavasSript
+- 언어: JavaScript
 - 프레임워크: NPM Library
 - 코드 패치 LLM 모델: {model}
 
