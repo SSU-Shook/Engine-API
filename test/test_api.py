@@ -67,8 +67,9 @@ def patch_test(file_id):
     }
     response = requests.get(url)
     print(response.status_code)
-    print(response.json())
-
+    # print(response.content)
+    with open("patch.md", "wb") as f:
+        f.write(response.content)
 if __name__ == "__main__":
     # file_id = upload_test()
     # filelist_test()
