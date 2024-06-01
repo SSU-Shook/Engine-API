@@ -57,3 +57,30 @@ VULN_DETAIL = '''
 - 코드 패치 설명  
     - {patch_description}
 '''.strip()
+
+
+
+
+
+
+
+
+
+
+
+
+
+############## sast-llm llm prompts ################
+prompt_code_style_analysis = '''
+Analyze the attached source code files and output ESLint_rules and Prettier_rules in json format, respectively.
+'''
+
+
+prompt_patch_vulnerabilities_entire_file = '''
+You patch the vulnerability and save the patched code as a new file.
+'''
+
+
+prompt_explain_patch = '''
+Analyze the attached source code and explain what vulnerabilities existed and how they were patched.
+'''
