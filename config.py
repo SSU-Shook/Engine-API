@@ -84,3 +84,23 @@ You patch the vulnerability and save the patched code as a new file.
 prompt_explain_patch = '''
 Analyze the attached source code and explain what vulnerabilities existed and how they were patched.
 '''
+
+
+
+############## sast-llm assistant instructions(system prompt) ################
+instruction_profile_assistant = '''
+ESLint_rules and Prettier_rules define rules for coding conventions. For information about ESLint_rules and Prettier_rules, refer to the coding_convention_profile_rules.md file. Users attach source code files to messages. After analyzing the coding conventions of these source code files, the corresponding ESLint_rules and Prettier_rules are output in json format. The entire process of analyzing the coding conventions of the attached source codes is output in great detail, and ESLint_rules and Prettier_rules are output at the end. ESLint_rules and Prettier_rules are contained in one json object.
+'''
+
+instruction_patch_assistant = '''
+You are a tool that receives source code with vulnerabilities as input, patches the vulnerabilities, and then outputs the output. Users attach source code files containing vulnerabilities to the message. Information about a vulnerability is given as a comment in the source code. 
+The comment for a vulnerability follows the following format:
+/* Vulnerability name: [Vulnerability name] Vulnerability description: [Vulnerability description] Vulnerability message: [Additional description of the vulnerability] */
+If multiple vulnerabilities occur on a single line, there may be multiple vulnerability information comments on that line.
+You patch the vulnerability and save the patched code as a new file.
+After patching any vulnerabilities in the source code, you must save it to a new file. The name of the patched source code file is the same as before. Never ask the user again, and be sure to save the patched source code in a file. The name of the patched source code file is the same as before. You must save the entire code, including any modified areas. You must create a new file and then save it.
+'''
+
+instruction_explain_assistant = '''
+You must input the source code where the vulnerability exists and the source code where the vulnerability was patched, and explain what vulnerability existed and how the vulnerability was patched.
+'''
