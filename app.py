@@ -16,6 +16,7 @@ import zipfile
 import config
 import subprocess
 import csv
+import sast_llm
 
 # http://127.0.0.1:8000/docs
 # http://127.0.0.1:8000/redoc
@@ -188,7 +189,7 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
                 codebases.append(codebase)
     except:
         raise HTTPException(status_code=500, detail="Failed to parse codeql analysis result")
-
+    
     return codebases
 
 @app.get("/patch/")
@@ -206,19 +207,33 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
     codebases = db.query(Codebase).filter(Codebase.zipfilemetadata_id == file_id).all()
     if not codebases:
         raise HTTPException(status_code=404, detail="Codebases not found")
+        # raise HTTPException(status_code=404, detail="Codebases not found")
 
     # check if patched
     if all([c.is_patched for c in codebases]):
         return FileResponse(f"reports/{file.path}.md", media_type='application/octet-stream', filename=f"{file.path}.md", headers={"Content-Disposition": "attachment; filename=report.md"}, status_code=200)
         # raise HTTPException(status_code=400, detail="All codebases are already patched")
 
-    # codebase 전체 학습
+    codeql_csv_path = input("Enter the path of the CodeQL CSV file: ")
+    codeql_csv_path = os.path.abspath(codeql_csv_path)
 
-    # 여기에 llm repair .py 코드 호출 추가
 
-    # 스타일 프로파일링 등을 통해 학습된 모델로 패치 코드 생성
+    # 프로젝트의 경로 = codeql csv 상의 경로의 베이스 경로
+    project_path = input("Enter the path of the project: ")
+    project_path = os.path.abspath(project_path)
 
-    # 스타일 일관성 맞추어서 patch
+
+    print('-'*50)
+    print(f'CodeQL CSV path: {codeql_csv_path}')
+    print(f'Project path: {project_path}')
+    print('-'*50)
+
+    # patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None, zero_shot_cot=False):
+    # profile_assistant를 사용하여 코딩 컨벤션 프로파일링 결과를 얻는다. (json 문자열 형태)
+    patched_vulnerabilities = sast_llm.patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None, zero_shot_cot=False, rag=True)
+    
+    
+    print(patched_vulnerabilities)
 
 
     # ispatched = True로 변경
