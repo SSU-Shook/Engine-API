@@ -57,8 +57,10 @@ def diff_code(code1, code2):
     '''
     두 코드를 비교하여 diff를 반환
     '''
-    code1 = code1.splitlines()
-    code2 = code2.splitlines()
+    # code1 = code1.splitlines()
+    code1 = [line.strip() for line in code1.splitlines()]
+    # code2 = code2.splitlines()
+    code2 = [line.strip() for line in code2.splitlines()]
     diff = difflib.unified_diff(code1, code2, lineterm='')
     return '\n'.join(diff)
 

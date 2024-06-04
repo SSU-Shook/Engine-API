@@ -47,6 +47,7 @@ Analyze the attached source code files and output ESLint_rules and Prettier_rule
 
 prompt_patch_vulnerabilities = '''
 You patch the vulnerability and save the patched code as a new file.
+When patching, keep the indentation the same as origin code.
 '''
 
 
