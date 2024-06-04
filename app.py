@@ -45,6 +45,7 @@ def get_db():
 
 def execute_command(command):
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # process = subprocess.Popen(command, shell=True)
     return process
 
 def add_codebase(db: Session, codebase_dict: dict) -> schemas.Codebase:
@@ -138,12 +139,12 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
 
     command1 = config.CODEQL_CREATE_COMMAND.format(db_path = f"db/{file.path}",
                                                   src_path = f'files/{file.path}')
-    # print(command1)
+    print(command1)
 
     try:
         p = execute_command(command1)
-        stdout1, stderr1 = p.wait()
-        # p.wait()
+        # stdout1, stderr1 = p.wait()
+        p.wait()
     except:
         raise HTTPException(status_code=500, detail="Failed to create codeql database")
 
@@ -151,16 +152,18 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
     command2 = config.CODEQL_ANALYSIS_COMMAND.format(db_path = f"db/{file.path}",
                                                      ql_path = config.CODEQL_QL_PATH,
                                                      output_path = f"results/{file.path}.csv",)
-    # print(command2)
+    print(command2)
     try:
         p = execute_command(command2)
-        stdout2, stderr2 = p.communicate()
-        # p.wait()
+        # stdout2, stderr2 = p.communicate()
+        p.wait()
     except:
         raise HTTPException(status_code=500, detail="Failed to run codeql analysis")
     
     # update db
     file.is_scanned = True
+
+    print('finish')
 
     # parse result
     codebases = []
@@ -214,49 +217,71 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
         return FileResponse(f"reports/{file.path}.md", media_type='application/octet-stream', filename=f"{file.path}.md", headers={"Content-Disposition": "attachment; filename=report.md"}, status_code=200)
         # raise HTTPException(status_code=400, detail="All codebases are already patched")
 
-    codeql_csv_path = input("Enter the path of the CodeQL CSV file: ")
-    codeql_csv_path = os.path.abspath(codeql_csv_path)
+    codeql_csv_path = f"results/{file.path}.csv"
 
-
-    # 프로젝트의 경로 = codeql csv 상의 경로의 베이스 경로
-    project_path = input("Enter the path of the project: ")
-    project_path = os.path.abspath(project_path)
-
-
-    print('-'*50)
-    print(f'CodeQL CSV path: {codeql_csv_path}')
-    print(f'Project path: {project_path}')
-    print('-'*50)
+    project_path = f'files/{file.path}'
 
     # patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None, zero_shot_cot=False):
     # profile_assistant를 사용하여 코딩 컨벤션 프로파일링 결과를 얻는다. (json 문자열 형태)
-    patched_vulnerabilities = sast_llm.patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None, zero_shot_cot=False, rag=True)
+    patched_vulnerabilities = sast_llm.patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None, zero_shot_cot=False, rag=False)
     
-    
+    print('[********]')
     print(patched_vulnerabilities)
+    '''
+    {'patched_files': {'/home/hhjo/KMHResearch/realsung/Engine-API/files/3933de0b68252db6deaaee2831d6304b-1717501935/npm-lockfile-38f99c3374ca4e9bd75f3ec34f3edb249eb391cf/getLockfile.js': '/home/hhjo/KMHResearch/realsung/Engine-API/patched_codes/a42fb63c-0935-4058-b624-72de5ffded78/3933de0b68252db6deaaee2831d6304b-1717501935/npm-lockfile-38f99c3374ca4e9bd75f3ec34f3edb249eb391cf/getLockfile.js'}, 'vulnerabilities_by_file': {'/home/hhjo/KMHResearch/realsung/Engine-API/files/3933de0b68252db6deaaee2831d6304b-1717501935/npm-lockfile-38f99c3374ca4e9bd75f3ec34f3edb249eb391cf/getLockfile.js': [{'name': 'Indirect uncontrolled command line', 'description': 'Forwarding command-line arguments to a child process executed within a shell may indirectly introduce command-line injection vulnerabilities.', 'severity': 'warning', 'message': 'This command depends on an unsanitized [["command-line argument"|"relative:///npm-lockfile-38f99c3374ca4e9bd75f3ec34f3edb249eb391cf/bin.js:17:2:21:2"]].', 'path': '/npm-lockfile-38f99c3374ca4e9bd75f3ec34f3edb249eb391cf/getLockfile.js', 'start_line': 43, 'start_column': 4, 'end_line': 43, 'end_column': 134}]}}
+    '''
+    print('[********]')
+
+    if len(patched_vulnerabilities['patched_files']) > 0:
+        count = 1
+        vuln_details = ""
+        for original_path, patched_path in patched_vulnerabilities['patched_files'].items():
+            with open(original_path, 'r') as f1:
+                origin = f1.read()
+                with open(patched_path, 'r') as f2:
+                    patched = f2.read()
+                    diff = diff_code(origin, patched)
+                    print(diff)
+
+            patched_name = patched_vulnerabilities['vulnerabilities_by_file'][original_path]
+            for vuln in patched_name:
+                vuln_detail = config.VULN_DETAIL.format(idx=count,
+                                                            vuln_name=vuln['name'],
+                                                            path=vuln['path'],
+                                                            severity=vuln['severity'],
+                                                            description=vuln['description'],
+                                                            message=vuln['message'],
+                                                            original_code=origin,
+                                                            patched_code=patched,
+                                                            diff_code=diff,
+                                                            patch_description="patched")
+                vuln_details += vuln_detail
+                count += 1
+    else:
+        vuln_details = "No vulnerabilities are patched"
 
 
-    # ispatched = True로 변경
-    for codebase in codebases:
-        codebase.is_patched = True
-        db.commit()
 
-    vuln_details = ""
-    count = 1
-    for codebase in codebases:
-        vuln_datail = config.VULN_DETAIL.format(idx=count,
-                                                    vuln_name=codebase.name,
-                                                    path=codebase.path,
-                                                    severity=codebase.severity,
-                                                    description=codebase.description,
-                                                    message=codebase.message,
-                                                    original_code="import time",
-                                                    patched_code="import os",
-                                                    diff_code="+ import os\n- import time",
-                                                    patch_description="time -> os"
-        )
-        vuln_details += vuln_datail
-        count += 1
+    # 패치 이전과 패치 이후 diffing
+
+    # vuln_details = ""
+    # count = 1
+    # for codebase in codebases:
+    #     vuln_datail = config.VULN_DETAIL.format(idx=count,
+    #                                                 vuln_name=codebase.name,
+    #                                                 path=codebase.path,
+    #                                                 severity=codebase.severity,
+    #                                                 description=codebase.description,
+    #                                                 message=codebase.message,
+    #                                                 original_code="import time",
+    #                                                 patched_code="import os",
+    #                                                 diff_code="+ import os\n- import time",
+    #                                                 patch_description="time -> os"
+    #     )
+    #     vuln_details += vuln_datail
+    #     count += 1
+    #     codebase.is_patched = True
+    #     db.commit()
     
     # 리포트 markdown 템플릿 생성
     template = config.TEMPLATE.format(title=file.name,
@@ -291,4 +316,4 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5001)
+    uvicorn.run(app, host="0.0.0.0", port=5000)
