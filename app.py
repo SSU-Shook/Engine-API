@@ -243,7 +243,7 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
             
             # patch description
             
-            description = explain_patch(diff)
+            description = sast_llm.explain_patch(diff)
 
             patched_name = patched_vulnerabilities['vulnerabilities_by_file'][original_path]
             for vuln in patched_name:
