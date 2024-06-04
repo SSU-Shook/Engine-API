@@ -18,6 +18,7 @@ import subprocess
 import csv
 import sast_llm
 from helper_utils import *
+from patch_utils import *
 
 # http://127.0.0.1:8000/docs
 # http://127.0.0.1:8000/redoc
@@ -238,7 +239,8 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
                 origin = f1.read()
                 with open(patched_path, 'r') as f2:
                     patched = f2.read()
-                    diff = generate_diff(origin, patched)
+                    # diff = generate_diff(origin, patched) # helper_utils
+                    diff = diff_code(origin, patched) # patch_utils
                     # print(diff)
             
             # patch description
