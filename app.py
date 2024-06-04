@@ -140,7 +140,7 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
 
     command1 = config.CODEQL_CREATE_COMMAND.format(db_path = f"db/{file.path}",
                                                   src_path = f'files/{file.path}')
-    print(command1)
+    # print(command1)
 
     try:
         p = execute_command(command1)
@@ -153,7 +153,7 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
     command2 = config.CODEQL_ANALYSIS_COMMAND.format(db_path = f"db/{file.path}",
                                                      ql_path = config.CODEQL_QL_PATH,
                                                      output_path = f"results/{file.path}.csv",)
-    print(command2)
+    # print(command2)
     try:
         p = execute_command(command2)
         # stdout2, stderr2 = p.communicate()
@@ -164,7 +164,7 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
     # update db
     file.is_scanned = True
 
-    print('finish')
+    # print('finish')
 
     # parse result
     codebases = []
@@ -226,12 +226,9 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
     # profile_assistant를 사용하여 코딩 컨벤션 프로파일링 결과를 얻는다. (json 문자열 형태)
     patched_vulnerabilities = sast_llm.patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None, zero_shot_cot=False, rag=False)
     
-    print('[********]')
-    print(patched_vulnerabilities)
-    '''
-    {'patched_files': {'/home/hhjo/KMHResearch/realsung/Engine-API/files/3933de0b68252db6deaaee2831d6304b-1717501935/npm-lockfile-38f99c3374ca4e9bd75f3ec34f3edb249eb391cf/getLockfile.js': '/home/hhjo/KMHResearch/realsung/Engine-API/patched_codes/a42fb63c-0935-4058-b624-72de5ffded78/3933de0b68252db6deaaee2831d6304b-1717501935/npm-lockfile-38f99c3374ca4e9bd75f3ec34f3edb249eb391cf/getLockfile.js'}, 'vulnerabilities_by_file': {'/home/hhjo/KMHResearch/realsung/Engine-API/files/3933de0b68252db6deaaee2831d6304b-1717501935/npm-lockfile-38f99c3374ca4e9bd75f3ec34f3edb249eb391cf/getLockfile.js': [{'name': 'Indirect uncontrolled command line', 'description': 'Forwarding command-line arguments to a child process executed within a shell may indirectly introduce command-line injection vulnerabilities.', 'severity': 'warning', 'message': 'This command depends on an unsanitized [["command-line argument"|"relative:///npm-lockfile-38f99c3374ca4e9bd75f3ec34f3edb249eb391cf/bin.js:17:2:21:2"]].', 'path': '/npm-lockfile-38f99c3374ca4e9bd75f3ec34f3edb249eb391cf/getLockfile.js', 'start_line': 43, 'start_column': 4, 'end_line': 43, 'end_column': 134}]}}
-    '''
-    print('[********]')
+    # print('[********]')
+    # print(patched_vulnerabilities)
+    # print('[********]')
 
     if len(patched_vulnerabilities['patched_files']) > 0:
         count = 1
@@ -242,7 +239,7 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
                 with open(patched_path, 'r') as f2:
                     patched = f2.read()
                     diff = generate_diff(origin, patched)
-                    print(diff)
+                    # print(diff)
             
             # patch description
             
@@ -259,7 +256,7 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
                                                             original_code=origin,
                                                             patched_code=patched,
                                                             diff_code=diff,
-                                                            patch_description="patched")
+                                                            patch_description=description)
                 vuln_details += vuln_detail
                 count += 1
     else:
