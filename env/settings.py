@@ -1,6 +1,6 @@
 LLM_API_KEY = {
-    # 'openai': 'sk-proj-3e7ss6KFpAQpZbaeloXdT3BlbkFJzEmoCGgZXQJIF81HbBxk', 
-    'openai': 'sk-proj-qrmh6CtGOA1DTKVpSUcYT3BlbkFJJWaW7SsAfkngh5Rvgq3P',
+    'openai': 'sk-proj-3e7ss6KFpAQpZbaeloXdT3BlbkFJzEmoCGgZXQJIF81HbBxk', 
+    # 'openai': 'sk-proj-qrmh6CtGOA1DTKVpSUcYT3BlbkFJJWaW7SsAfkngh5Rvgq3P',
     'anthropic': 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', 
     'gemini': 'AIzaSyDgUMo0qz_W9IcTi23D9Xc4-RO_RaGkLj0',
 }
