@@ -469,6 +469,7 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
         '''
         # Find the message with the smallest index that has non-empty attachments
         filtered_messages = [message for message in messages if len(message.attachments) > 0]
+        print(f'[*] {filtered_messages}')
         patched_code_attachment = filtered_messages[0].attachments[0]
         patched_code_file_id = patched_code_attachment.file_id
         print(f"patched_code_file_id: {patched_code_file_id}")

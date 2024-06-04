@@ -71,6 +71,7 @@ def patch_test(file_id):
     # print(response.content)
     import time
     with open("patch-" + str(int(time.time())) + ".md", "wb") as f:
+        print(f'patch file : patch-{int(time.time())}.md')
         f.write(response.content)
 
 if __name__ == "__main__":
