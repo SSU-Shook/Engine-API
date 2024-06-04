@@ -16,6 +16,9 @@ import zipfile
 import config
 import subprocess
 import csv
+import sast_llm
+from helper_utils import *
+from patch_utils import *
 
 # http://127.0.0.1:8000/docs
 # http://127.0.0.1:8000/redoc
@@ -43,7 +46,8 @@ def get_db():
         db.close()
 
 def execute_command(command):
-    process = subprocess.Popen(command, shell=True)
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # process = subprocess.Popen(command, shell=True)
     return process
 
 def add_codebase(db: Session, codebase_dict: dict) -> schemas.Codebase:
@@ -61,8 +65,9 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
         raise HTTPException(status_code=400, detail="Only zip files are allowed")
 
     # save file
-    if not os.path.exists("files"):
-        os.makedirs("files")
+    # if not os.path.exists("files"):
+    #     os.makedirs("files")
+    os.makedirs("files", exist_ok=True)
 
     # create directory
     dirname = hashlib.md5(random.randbytes(32)).hexdigest() + \
@@ -126,6 +131,11 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
     if not os.path.exists(f'files/{file.path}') or not os.path.isdir(f'files/{file.path}'):
         raise HTTPException(status_code=404, detail="File path not found")
 
+    # if file is already scanned
+    if file.is_scanned:
+        codebases = db.query(Codebase).filter(Codebase.zipfilemetadata_id == file_id).all()
+        return codebases
+
     os.makedirs("db", exist_ok=True)
     os.makedirs("results", exist_ok=True)
 
@@ -135,6 +145,7 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
 
     try:
         p = execute_command(command1)
+        # stdout1, stderr1 = p.wait()
         p.wait()
     except:
         raise HTTPException(status_code=500, detail="Failed to create codeql database")
@@ -146,12 +157,15 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
     # print(command2)
     try:
         p = execute_command(command2)
+        # stdout2, stderr2 = p.communicate()
         p.wait()
     except:
         raise HTTPException(status_code=500, detail="Failed to run codeql analysis")
     
     # update db
     file.is_scanned = True
+
+    # print('finish')
 
     # parse result
     codebases = []
@@ -180,7 +194,7 @@ async def analyze_file(file_id: int = Query(..., description="ID of the file to 
                 codebases.append(codebase)
     except:
         raise HTTPException(status_code=500, detail="Failed to parse codeql analysis result")
-
+    
     return codebases
 
 @app.get("/patch/")
@@ -198,31 +212,80 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
     codebases = db.query(Codebase).filter(Codebase.zipfilemetadata_id == file_id).all()
     if not codebases:
         raise HTTPException(status_code=404, detail="Codebases not found")
+        # raise HTTPException(status_code=404, detail="Codebases not found")
 
-    # codebase 전체 학습
+    # check if patched
+    if all([c.is_patched for c in codebases]):
+        return FileResponse(f"reports/{file.path}.md", media_type='application/octet-stream', filename=f"{file.path}.md", headers={"Content-Disposition": "attachment; filename=report.md"}, status_code=200)
+        # raise HTTPException(status_code=400, detail="All codebases are already patched")
 
-    # 여기에 llm repair .py 코드 호출 추가
+    codeql_csv_path = f"results/{file.path}.csv"
 
-    # 스타일 프로파일링 등을 통해 학습된 모델로 패치 코드 생성
+    project_path = f'files/{file.path}'
 
-    # 스타일 일관성 맞추어서 patch
+    # patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None, zero_shot_cot=False):
+    # profile_assistant를 사용하여 코딩 컨벤션 프로파일링 결과를 얻는다. (json 문자열 형태)
+    patched_vulnerabilities = sast_llm.patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None, zero_shot_cot=False, rag=False)
+    
+    # print('[********]')
+    # print(patched_vulnerabilities)
+    # print('[********]')
 
-    vuln_details = ""
-    count = 1
-    for codebase in codebases:
-        vuln_datail = config.VULN_DETAIL.format(idx=count,
-                                                    vuln_name=codebase.name,
-                                                    path=codebase.path,
-                                                    severity=codebase.severity,
-                                                    description=codebase.description,
-                                                    message=codebase.message,
-                                                    original_code="import time",
-                                                    patched_code="import os",
-                                                    diff_code="+ import os\n- import time",
-                                                    patch_description="time -> os"
-        )
-        vuln_details += vuln_datail
-        count += 1
+    if len(patched_vulnerabilities['patched_files']) > 0:
+        count = 1
+        vuln_details = ""
+        for original_path, patched_path in patched_vulnerabilities['patched_files'].items():
+            with open(original_path, 'r') as f1:
+                origin = f1.read()
+                with open(patched_path, 'r') as f2:
+                    patched = f2.read()
+                    # diff = generate_diff(origin, patched) # helper_utils
+                    diff = diff_code(origin, patched) # patch_utils
+                    # print(diff)
+            
+            # patch description
+            
+            description = sast_llm.explain_patch(diff)
+
+            patched_name = patched_vulnerabilities['vulnerabilities_by_file'][original_path]
+            for vuln in patched_name:
+                vuln_detail = config.VULN_DETAIL.format(idx=count,
+                                                            vuln_name=vuln['name'],
+                                                            path=vuln['path'],
+                                                            severity=vuln['severity'],
+                                                            description=vuln['description'],
+                                                            message=vuln['message'],
+                                                            original_code=origin,
+                                                            patched_code=patched,
+                                                            diff_code=diff,
+                                                            patch_description=description)
+                vuln_details += vuln_detail
+                count += 1
+    else:
+        vuln_details = "No vulnerabilities are patched"
+
+
+
+    # 패치 이전과 패치 이후 diffing
+
+    # vuln_details = ""
+    # count = 1
+    # for codebase in codebases:
+    #     vuln_datail = config.VULN_DETAIL.format(idx=count,
+    #                                                 vuln_name=codebase.name,
+    #                                                 path=codebase.path,
+    #                                                 severity=codebase.severity,
+    #                                                 description=codebase.description,
+    #                                                 message=codebase.message,
+    #                                                 original_code="import time",
+    #                                                 patched_code="import os",
+    #                                                 diff_code="+ import os\n- import time",
+    #                                                 patch_description="time -> os"
+    #     )
+    #     vuln_details += vuln_datail
+    #     count += 1
+    #     codebase.is_patched = True
+    #     db.commit()
     
     # 리포트 markdown 템플릿 생성
     template = config.TEMPLATE.format(title=file.name,
@@ -234,6 +297,8 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
                             note_count=len([c for c in codebases if c.severity == "note"]),
                             details=vuln_details)
     
+    os.makedirs("reports", exist_ok=True)
+
     with open(f"reports/{file.path}.md", 'w', encoding='utf-8') as f:
         f.write(template)
 
@@ -255,4 +320,4 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5000)
+    uvicorn.run(app, host="0.0.0.0", port=5001)

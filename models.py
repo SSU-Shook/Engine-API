@@ -30,6 +30,7 @@ class Codebase(Base):
     end_line = Column(Integer, index=True)
     end_column = Column(Integer, index=True)
     zipfilemetadata_id = Column(Integer, ForeignKey("zipfile_metadata.id"))
+    is_patched = Column(Boolean, default=False)
 
     # Relationship to ZipFileMetadata
     zipfilemetadata = relationship("ZipFileMetadata", back_populates="codebases")

@@ -20,6 +20,11 @@ COPY models.py /app
 COPY schemas.py /app
 COPY config.py /app
 COPY requirements.txt /app
+COPY patch_utils.py /app
+COPY sast_llm.py /app
+COPY instructions.py /app
+COPY helper_utils.py /app
+COPY env /app/env
 
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
