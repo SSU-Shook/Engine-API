@@ -90,7 +90,7 @@ def get_full_path(base_path, file_path):
     if file_path.startswith("/"):
         file_path = './' + file_path
 
-    print(f'base_path: {base_path}, file_path: {file_path}')
+    # print(f'base_path: {base_path}, file_path: {file_path}')
     return os.path.abspath(os.path.join(base_path, file_path))
 
 

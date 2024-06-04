@@ -151,7 +151,7 @@ def download_file(file_id, download_path):
 
     with open(download_path, "wb") as f:
         content = client.files.content(file_id).read()
-        print(content)
+        # print(content)
         f.write(content)
     return download_path
 
@@ -163,9 +163,9 @@ def profile_code_style(project_path, zero_shot_cot=False):
     프로젝트 경로로부터 .js 파일 리스트 뽑기
     '''
     file_list = get_js_file_list(project_path)
-    print("File list:")
-    print(file_list)
-    print('-'*50)
+    # print("File list:")
+    # print(file_list)
+    # print('-'*50)
 
 
 
@@ -173,9 +173,9 @@ def profile_code_style(project_path, zero_shot_cot=False):
     .js 파일들을 client에 업로드
     '''
     file_id_list = upload_files(file_list)
-    print("Uploaded file id list:")
-    print(file_id_list)
-    print('-'*50)
+    # print("Uploaded file id list:")
+    # print(file_id_list)
+    # print('-'*50)
 
 
 
@@ -233,6 +233,7 @@ def profile_code_style(project_path, zero_shot_cot=False):
 
 
     elapsed_time = time.time() - start_time
+    print("[*] Profile")
     print("Elapsed time: {} minutes {} seconds".format(int((elapsed_time) // 60), int((elapsed_time) % 60)))
     print(f'Status: {status}')
     print('-'*50)
@@ -250,14 +251,14 @@ def profile_code_style(project_path, zero_shot_cot=False):
     llm의 프로파일 결과 출력
     '''
     llm_profile_result = messages.data[0].content[0].text.value
-    print(llm_profile_result)
-    print('-'*50)
+    # print(llm_profile_result)
+    # print('-'*50)
 
 
     '''
     llm의 출력 결과에서 코딩 컨벤션 프로파일(json 형태)만 추출
     '''
-    print("Code style profile:")
+    # print("Code style profile:")
     extracted_codes_from_llm_profile_result = extract_code(llm_profile_result)
     extracted_json_codes_from_llm_profile_result = [code[1] for code in extracted_codes_from_llm_profile_result if code[0] == 'json']
     
@@ -283,11 +284,11 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
     codeql csv 파일을 파싱하여 취약점 정보를 추출한다.
     '''
     vulnerabilities_dict = parse_codeql_csv(codeql_csv_path)
-    print("-"*50)
-    print("Vulnerabilities:")
-    for vulnerability in vulnerabilities_dict:
-        print(vulnerability)
-    print("-"*50)
+    # print("-"*50)
+    # print("Vulnerabilities:")
+    # for vulnerability in vulnerabilities_dict:
+    #     print(vulnerability)
+    # print("-"*50)
 
     
     
@@ -302,10 +303,10 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
             vulnerabilities_dict_by_file[source_absolute_path].append(vulnerability)
         else:
             vulnerabilities_dict_by_file[source_absolute_path] = [vulnerability]
-    print("Vulnerabilities by file:")
-    for key, value in vulnerabilities_dict_by_file.items():
-        print(key, value)
-    print("-"*50)
+    # print("Vulnerabilities by file:")
+    # for key, value in vulnerabilities_dict_by_file.items():
+    #     print(key, value)
+    # print("-"*50)
 
     
 
@@ -322,12 +323,12 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
 
     project_uuid = generate_directory_name()
     original_path_copied_path_dict = copy_source_code_files(project_path, project_uuid, vulnerabilities_dict_by_file)
-    print(original_path_copied_path_dict)
+    # print(original_path_copied_path_dict)
 
     for code_path, vulnerabilities in vulnerabilities_dict_by_file.items():
         comment_source_code(original_path_copied_path_dict[code_path], vulnerabilities)
-        with open(original_path_copied_path_dict[code_path], 'r', encoding='UTF8') as file:
-            print(file.read())
+        # with open(original_path_copied_path_dict[code_path], 'r', encoding='UTF8') as file:
+        #     print(file.read())
    
 
     code_patch_result = dict()
@@ -360,11 +361,11 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
         rag 프롬프트 수행
         '''
         if rag:
-            print('[*] RAG Prompt')
+            # print('[*] RAG Prompt')
             rag_prompt = 'This is a description of vulnerability information. Learn the content.\n' + \
                 '**Do nothing in response to this command**' + get_cwe_description(vulnerabilities[0]['name'])
         
-            print(f'[DEBUG] len(rag_prompt) : {len(rag_prompt)}')
+            # print(f'[DEBUG] len(rag_prompt) : {len(rag_prompt)}')
 
             message = client.beta.threads.messages.create(
                 thread_id=patch_thread.id,
@@ -385,6 +386,7 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
                 status = check_status(patch_run.id, patch_thread.id)
 
             elapsed_time = time.time() - start_time
+            print("[*] RAG")
             print("Elapsed time: {} minutes {} seconds".format(int((elapsed_time) // 60), int((elapsed_time) % 60)))
             print(f'Status: {status}')
             print('-'*50)
@@ -415,6 +417,7 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
             status = check_status(patch_run.id, patch_thread.id)
 
         elapsed_time = time.time() - start_time
+        print("[*] Patch")
         print("Elapsed time: {} minutes {} seconds".format(int((elapsed_time) // 60), int((elapsed_time) % 60)))
         print(f'Status: {status}')
         print('-'*50)
@@ -425,22 +428,22 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
 
 
 
-        for message in messages:
-            print(message.content[0].text.value)
-            print('*'*50)
-        print('-'*50)
+        # for message in messages:
+        #     print(message.content[0].text.value)
+        #     print('*'*50)
+        # print('-'*50)
 
 
-        for message in messages:
-            print(message)
-            print(message.attachments)
-            print('*'*50)
-        print('-'*50)
+        # for message in messages:
+        #     print(message)
+        #     print(message.attachments)
+        #     print('*'*50)
+        # print('-'*50)
 
 
         llm_patch_result = messages.data[0].content[0].text.value
-        print(llm_patch_result)
-        print('-'*50)
+        # print(llm_patch_result)
+        # print('-'*50)
 
 
 
@@ -469,10 +472,10 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
         '''
         # Find the message with the smallest index that has non-empty attachments
         filtered_messages = [message for message in messages if len(message.attachments) > 0]
-        print(f'[*] {filtered_messages}')
+        # print(f'[*] {filtered_messages}')
         patched_code_attachment = filtered_messages[0].attachments[0]
         patched_code_file_id = patched_code_attachment.file_id
-        print(f"patched_code_file_id: {patched_code_file_id}")
+        # print(f"patched_code_file_id: {patched_code_file_id}")
 
         
         patched_code_save_path = os.path.join(patched_project_save_path, get_relative_path(project_path, code_path))
@@ -521,6 +524,7 @@ def explain_patch(vulnerable_code_path, patched_code_path, zero_shot_cot=False):
         status = check_status(explain_run.id, explain_thread.id)
     
     elapsed_time = time.time() - start_time
+    print("[*] Explain")
     print("Elapsed time: {} minutes {} seconds".format(int((elapsed_time) // 60), int((elapsed_time) % 60)))
     print(f'Status: {status}')
     print('-'*50)
@@ -531,7 +535,7 @@ def explain_patch(vulnerable_code_path, patched_code_path, zero_shot_cot=False):
     )
 
     llm_explain_result = messages.data[0].content[0].text.value
-    print(llm_explain_result)
-    print('-'*50)
+    # print(llm_explain_result)
+    # print('-'*50)
 
     
