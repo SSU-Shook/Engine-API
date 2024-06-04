@@ -243,6 +243,10 @@ async def patch_file(file_id: int = Query(..., description="ID of the file to pa
                     patched = f2.read()
                     diff = generate_diff(origin, patched)
                     print(diff)
+            
+            # patch description
+            
+            description = explain_patch(diff)
 
             patched_name = patched_vulnerabilities['vulnerabilities_by_file'][original_path]
             for vuln in patched_name:

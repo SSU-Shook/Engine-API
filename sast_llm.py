@@ -494,21 +494,22 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
 
 
 '''
-취약점이 존재하는 소스코드와 패치된 소스코드를 입력받아, 취약점과 패치 내용에 대한 설명을 반환
++ diff 파일을 전달받아, 취약점과 패치 내용에 대한 설명을 반환
 '''
-def explain_patch(vulnerable_code_path, patched_code_path, zero_shot_cot=False):
+def explain_patch(diff_content, zero_shot_cot=False):
     explain_thread = client.beta.threads.create()
 
-    file_id_list = upload_files(get_file_list_from_path_list([vulnerable_code_path, patched_code_path]))
-    attachments_list = create_attachments_list(file_id_list)
+    # file_id_list = upload_files(get_file_list_from_path_list([vulnerable_code_path, patched_code_path]))
+    # attachments_list = create_attachments_list(file_id_list)
 
-    prompt = instructions.prompt_explain_patch
+    prompt = instructions.prompt_explain_patch + \
+        f'``diff\n{diff_content}\n```'
 
     message = client.beta.threads.messages.create(
         thread_id=explain_thread.id,
         role="user",
         content=prompt,
-        attachments=attachments_list,
+        # attachments=attachments_list,
     )    
 
     explain_run = client.beta.threads.runs.create(
@@ -535,6 +536,8 @@ def explain_patch(vulnerable_code_path, patched_code_path, zero_shot_cot=False):
     )
 
     llm_explain_result = messages.data[0].content[0].text.value
+
+    return llm_explain_result
     # print(llm_explain_result)
     # print('-'*50)
 

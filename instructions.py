@@ -53,7 +53,7 @@ When patching, keep the indentation the same as origin code.
 
 
 prompt_explain_patch = '''
-Analyze the attached source code and explain what vulnerabilities existed and how they were patched.
+Analyze the .diff content and explain how they were patched.
 '''
 
 
