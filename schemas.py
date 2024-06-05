@@ -6,6 +6,7 @@ class ZipFileMetadataBase(BaseModel):
     content_type: str
     size: int
     is_scanned: bool
+    is_patched: bool
 
 class ZipFileMetadataCreate(ZipFileMetadataBase):
     pass
