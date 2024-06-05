@@ -489,17 +489,31 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
         - 새로운 파일을 생성해서, 사용자가 다운받을 수 있도록 해라 (프롬프트, instruction 수정)
         
         2.
-        - 기존과 같이 index 0부터 수정하되, purpose가 assistants_output인 파일을 다운받음
+        - 기존과 같이 index 0부터 순회하되, purpose가 assistants_output인 파일을 다운받음
         
         '''
 
+        '''
         # Find the message with the smallest index that has non-empty attachments
-        filtered_messages = [message for message in messages if len(message.attachments) > 0]
+        filtered_messages = [message for message in messages if len(message.attachments) > 0 ]
+
         # print(f'[*] {filtered_messages}')
         patched_code_attachment = filtered_messages[0].attachments[0]
         patched_code_file_id = patched_code_attachment.file_id
         # print(f"patched_code_file_id: {patched_code_file_id}")
+        '''
 
+        # messages를 index 0부터 순회하되, purpose가 assistants_output인 파일을 다운받음
+        patched_code_file_id = str()
+        for message in messages:
+            if len(message.attachments) != 0: # attachments가 존재할 때
+                for attachment in message.attachments:
+                    if attachment.purpose == 'assistants_output': # purpose가 assistants_output일 때
+                        patched_code_file_id = attachment.file_id
+                        break
+                else:
+                    continue
+                break
         
         patched_code_save_path = os.path.join(patched_project_save_path, get_relative_path(project_path, code_path))
         patched_code_save_path = os.path.abspath(patched_code_save_path)
