@@ -395,7 +395,8 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
         패치 프롬프트 수행
         '''
 
-        prompt = instructions.prompt_patch_vulnerabilities
+        #prompt = instructions.prompt_patch_vulnerabilities
+        prompt = instructions.prompt_patch_vulnerabilities_specify_file_name # 어시스턴트가 새로운 파일을 생성하지 않는 경우에 대한 완화 시도, 파일 이름을 patched.txt로 명시 (repair-file-download 브랜치)
 
         message = client.beta.threads.messages.create(
             thread_id=patch_thread.id,
@@ -470,13 +471,67 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
 
 
         '''
+
+        '''
+        https://platform.openai.com/docs/api-reference/files/object
+
+        purpose가 assistants인 파일은 다운받으려고 해서 발생하는 문제 수정 관련
+        purpose가 assistants_output인 파일(어시스턴트가 새로 생성한 파일)을 다운받아야 함
+
+        이러한 문제 발생 원인으로 두 가지 추정
+
+        1. 어시스턴트가 새로운 파일을 생성하지 않음(파일 이름 뭘로 하냐고 되물어봄, 원래 파일 수정, 환각 등....)
+        2. message의 attachments 순서가 뒤바뀜.
+
+        각 원인에 대한 해결 방법 고안
+
+        1.
+        - 어시스턴트에게 새로운 파일의 이름을 정해줌 (프롬프트, instruction 수정)
+        - 새로운 파일을 생성해서, 사용자가 다운받을 수 있도록 해라 (프롬프트, instruction 수정)
+        
+        2.
+        - 기존과 같이 index 0부터 순회하되, purpose가 assistants_output인 파일을 다운받음
+
+
+
+
+        Attachment에서 purpose를 구할 수 없는 문제....
+
+        https://platform.openai.com/docs/api-reference/messages/object#messages/object-attachments
+        Attachment 오브젝트
+
+        https://platform.openai.com/docs/api-reference/files/retrieve
+        File 오브젝트
+
+        file의 id로 file 오브젝트를 가져와서 purpose를 확인해야 함.
+        client.files.retrieve("file-abc123")
+        
+        '''
+
+        '''
         # Find the message with the smallest index that has non-empty attachments
-        filtered_messages = [message for message in messages if len(message.attachments) > 0]
+        filtered_messages = [message for message in messages if len(message.attachments) > 0 ]
+
         # print(f'[*] {filtered_messages}')
         patched_code_attachment = filtered_messages[0].attachments[0]
         patched_code_file_id = patched_code_attachment.file_id
         # print(f"patched_code_file_id: {patched_code_file_id}")
+        '''
 
+        # messages를 index 0부터 순회하되, purpose가 assistants_output인 파일을 다운받음
+        patched_code_file_id = str()
+        for message in messages:
+            if len(message.attachments) != 0: # attachments가 존재할 때
+                for attachment in message.attachments:
+                    file_id = attachment.file_id
+                    file = client.files.retrieve(file_id) # file의 id로 file 오브젝트를 가져옴
+
+                    if file.purpose == 'assistants_output': # purpose가 assistants_output일 때
+                        patched_code_file_id = file_id
+                        break
+                else:
+                    continue
+                break
         
         patched_code_save_path = os.path.join(patched_project_save_path, get_relative_path(project_path, code_path))
         patched_code_save_path = os.path.abspath(patched_code_save_path)
