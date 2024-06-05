@@ -395,7 +395,8 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
         패치 프롬프트 수행
         '''
 
-        prompt = instructions.prompt_patch_vulnerabilities
+        #prompt = instructions.prompt_patch_vulnerabilities
+        prompt = instructions.prompt_patch_vulnerabilities_specify_file_name # 어시스턴트가 새로운 파일을 생성하지 않는 경우에 대한 완화 시도, 파일 이름을 patched.txt로 명시 (repair-file-download 브랜치)
 
         message = client.beta.threads.messages.create(
             thread_id=patch_thread.id,
@@ -482,7 +483,7 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
         1. 어시스턴트가 새로운 파일을 생성하지 않음(파일 이름 뭘로 하냐고 되물어봄, 원래 파일 수정, 환각 등....)
         2. message의 attachments 순서가 뒤바뀜.
 
-        각 원인에 대한 해결 방법은 고안
+        각 원인에 대한 해결 방법 고안
 
         1.
         - 어시스턴트에게 새로운 파일의 이름을 정해줌 (프롬프트, instruction 수정)

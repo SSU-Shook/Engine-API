@@ -51,6 +51,13 @@ When patching, keep the indentation the same as origin code.
 '''
 
 
+# 어시스턴트가 새로운 파일을 생성하지 않는 경우에 대한 완화 시도, 파일 이름을 patched.txt로 명시
+prompt_patch_vulnerabilities_specify_file_name = '''
+You patch the vulnerability and save the patched code as a new file.
+The name of the newly saved file is patched.txt.
+When patching, keep the indentation the same as origin code.
+'''
+
 
 prompt_explain_patch = '''
 Analyze the .diff content and explain how they were patched.
