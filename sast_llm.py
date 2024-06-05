@@ -491,6 +491,20 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
         
         2.
         - 기존과 같이 index 0부터 순회하되, purpose가 assistants_output인 파일을 다운받음
+
+
+
+
+        Attachment에서 purpose를 구할 수 없는 문제....
+
+        https://platform.openai.com/docs/api-reference/messages/object#messages/object-attachments
+        Attachment 오브젝트
+
+        https://platform.openai.com/docs/api-reference/files/retrieve
+        File 오브젝트
+
+        file의 id로 file 오브젝트를 가져와서 purpose를 확인해야 함.
+        client.files.retrieve("file-abc123")
         
         '''
 
@@ -509,8 +523,11 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
         for message in messages:
             if len(message.attachments) != 0: # attachments가 존재할 때
                 for attachment in message.attachments:
-                    if attachment.purpose == 'assistants_output': # purpose가 assistants_output일 때
-                        patched_code_file_id = attachment.file_id
+                    file_id = attachment.file_id
+                    file = client.files.retrieve(file_id) # file의 id로 file 오브젝트를 가져옴
+
+                    if file.purpose == 'assistants_output': # purpose가 assistants_output일 때
+                        patched_code_file_id = file_id
                         break
                 else:
                     continue
